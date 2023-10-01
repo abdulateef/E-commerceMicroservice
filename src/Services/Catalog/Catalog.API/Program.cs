@@ -1,26 +1,44 @@
+using Catalog.API.Data;
+using Catalog.API.Repository;
 
+var builder = WebApplication.CreateBuilder(args);
 
-using Catalog.API;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Hosting;
-using System.Threading.Tasks;
+builder.Services.AddControllers();
+builder.Services.AddScoped<ICatalogContext, CatalogContext>();
+builder.Services.AddScoped<IProductRepository, ProductRepository>();
 
-namespace Catalog.API
+builder.Services.AddSwaggerGen(opt =>
 {
-    public class Program
-    {
-        public static async Task Main(string[] args)
-        {
+    opt.SwaggerDoc("V1", new Microsoft.OpenApi.Models.OpenApiInfo { Title = "Catalog.API", Version = "V1" });
 
-            var host = CreateHostBuilder(args).Build();
-            host.Run();
-        }
+});
 
-        public static IHostBuilder CreateHostBuilder(string[] args) =>
-            Host.CreateDefaultBuilder(args)
-                .ConfigureWebHostDefaults(webBuilder =>
-                {
-                    webBuilder.UseStartup<Startup>();
-                });
-    }
+var app = builder.Build();
+
+if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
+{
+    app.UseDeveloperExceptionPage();
 }
+app.UseSwagger();
+app.UseSwaggerUI(c =>
+{
+    string swaggerJsonBasePath = string.IsNullOrWhiteSpace(c.RoutePrefix) ? "." : "..";
+    c.SwaggerEndpoint($"{swaggerJsonBasePath}/swagger/V1/swagger.json", "My API");
+
+});
+
+app.UseHttpsRedirection();
+app.UseRouting();
+// global cors policy
+app.UseCors(x => x
+    .AllowAnyMethod()
+    .AllowAnyHeader()
+    .SetIsOriginAllowed(origin => true) // allow any origin
+    .AllowCredentials()); // allow credentials
+
+//app.UseAuthentication();
+// app.UseAuthorization();
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapControllers();
+});
